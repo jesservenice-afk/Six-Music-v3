@@ -1,0 +1,23 @@
+[
+  {
+    "id": 0,
+    "title": "KOKO",
+    "artist": "Omar Courtz",
+    "cover": "https://i1.sndcdn.com/artworks-VetOOmEhhR6t-0-t500x500.jpg",
+    "url": "https://archive.org/download/omar-courtz-ousi-koko-audio-l-or-py-0-iq-h-0/OMAR%20COURTZ%20%28%28OUSI%29%29%20-%20KOKO%20__%20Audio%20%5B_lOrPy0IqH0%5D.mp3"
+  },
+  {
+    "id": 1,
+    "title": "2/Catorce",
+    "artist": "Rauw Alejandro ft. Mr. NaisGai",
+    "cover": "https://i1.sndcdn.com/artworks-XdRJtqdlUY5vbLY8-sYymog-t500x500.jpg",
+    "url": "https://archive.org/download/rauw-alejandro-mr.-naisgai-2-catorce-3m-pxwu-pc-650/Rauw%20Alejandro%2C%20Mr.%20Naisgai%20-%202_Catorce%20%5B3mPXwuPc650%5D.mp3"
+  },
+  {
+    "id": 0,
+    "title": "Single",
+    "artist": "Dei V",
+    "cover": "https://i1.sndcdn.com/artworks-hLpeoIx6YtrciQyy-LBziKQ-t500x500.jpg",
+    "url": "https://archive.org/download/dei-v-single-official-video-oj-1-hkqj-zfc-y/Dei%20V%20-%20Single%20%28Official%20Video%29%20%5Boj1HKqjZFcY%5D.mp3"
+  }
+]
