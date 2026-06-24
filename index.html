@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spotify Mobile - SIX MUSIC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-black: #000000;
+            --bg-dark: #121212;
+            --text-white: #ffffff;
+            --text-grey: #b3b3b3;
+            --spotify-green: #1ed760;
+            --card-bg: #181818;
+            --like-red: #e91e63;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-black); color: var(--text-white); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .main-view { flex: 1; overflow-y: auto; padding: 20px 15px 120px 15px; background: linear-gradient(180deg, #222 0%, var(--bg-black) 40%); }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .header { margin-bottom: 25px; padding-top: 10px; }
+        .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; }
+        .search-container { margin-bottom: 25px; }
+        .search-input { width: 100%; padding: 12px 15px; border-radius: 8px; border: none; background-color: white; color: #000; font-weight: 600; font-size: 0.9rem; outline: none; }
+        
+        .songs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .song-card { background-color: var(--card-bg); padding: 12px; border-radius: 8px; cursor: pointer; position: relative; }
+        .card-cover { width: 100%; aspect-ratio: 1/1; border-radius: 4px; object-fit: cover; margin-bottom: 10px; }
+        .card-title { font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-artist { font-size: 0.75rem; color: var(--text-grey); margin-top: 4px; }
+        
+        /* Mini Player */
+        .mini-player { position: fixed; bottom: 65px; left: 8px; right: 8px; height: 56px; background-color: #2e050d; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; z-index: 100; gap: 10px; }
+        .mini-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+        .mini-cover { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; }
+        .mini-text { min-width: 0; flex: 1; }
+        .mini-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mini-artist { font-size: 0.75rem; color: var(--text-grey); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mini-btn-like { width: 28px; height: 28px; fill: var(--text-grey); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .mini-btn-like.liked { fill: var(--like-red); }
+        .mini-controls { width: 32px; height: 32px; cursor: pointer; }
+        .mini-progress-bar { position: absolute; bottom: 0; left: 12px; right: 12px; height: 3px; background: rgba(255,255,255,0.1); }
+        .mini-progress-fill { height: 100%; width: 0%; background: white; }
+
+        /* Navegación */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 65px; background-color: rgba(0,0,0,0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #111; z-index: 110; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-grey); font-size: 0.65rem; gap: 5px; cursor: pointer; }
+        .nav-item.active { color: white; }
+        .nav-icon-svg { width: 22px; height: 22px; fill: currentColor; }
+
+        /* Full Player */
+        .full-player { position: fixed; top: 100%; left: 0; width: 100%; height: 100%; background: linear-gradient(180deg, #7a162b 0%, #000 80%); z-index: 200; padding: 20px 25px 40px 25px; transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+        .full-player.open { top: 0; }
+        .full-player-header { display: flex; align-items: center; width: 100%; height: 50px; margin-bottom: 20px; }
+        .close-full { width: 32px; height: 32px; fill: white; cursor: pointer; }
+        .full-cover { width: 100%; aspect-ratio: 1/1; border-radius: 12px; object-fit: cover; margin-bottom: 40px; }
+        
+        .full-meta-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+        .full-info { min-width: 0; flex: 1; }
+        .full-info h2 { font-size: 1.5rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .full-info p { color: var(--text-grey); font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .full-player-like { width: 32px; height: 32px; fill: var(--text-grey); cursor: pointer; }
+        .full-player-like.liked { fill: var(--like-red); }
+
+        .full-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+        .full-btn { background: none; border: none; color: white; width: 32px; height: 32px; fill: white; }
+        .full-btn-main { width: 64px; height: 64px; fill: white; }
+        
+        .full-progress-container { width: 100%; height: 12px; display: flex; align-items: center; cursor: pointer; margin-top: 10px; }
+        .full-progress-bg { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; position: relative; }
+        .full-progress-fill { height: 100%; width: 0%; background: white; border-radius: 2px; position: absolute; top: 0; left: 0; }
+        
+        .empty-msg { color: var(--text-grey); font-size: 0.9rem; padding: 20px 0; text-align: center; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <div class="main-view" id="main-view">
+        <div id="view-home" class="view-section active">
+            <div class="header">
+                <div class="section-title" id="greeting-text">Hola</div>
+                <div class="search-container">
+                    <input type="text" id="search" class="search-input" placeholder="Buscar canción...">
+                </div>
+            </div>
+            <div class="songs-grid" id="grid"></div>
+        </div>
+
+        <div id="view-library" class="view-section">
+            <div class="header">
+                <div class="section-title">Canciones que te gustan</div>
+            </div>
+            <div class="songs-grid" id="liked-grid"></div>
+        </div>
+    </div>
+
+    <div class="mini-player" id="mini-player">
+        <div class="mini-info" id="open-full">
+            <img src="" class="mini-cover" id="m-cover" style="display:none;">
+            <div class="mini-text">
+                <div class="mini-title" id="m-title">Selecciona un tema</div>
+                <div class="mini-artist" id="m-artist">...</div>
+            </div>
+        </div>
+        <div class="mini-btn-like" id="m-like">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </div>
+        <div class="mini-controls" id="m-play-container">
+            <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:white;"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div class="mini-progress-bar"><div class="mini-progress-fill" id="m-progress"></div></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="nav-home"><svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Inicio</span></div>
+        <div class="nav-item" id="nav-search"><svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><span>Buscar</span></div>
+        <div class="nav-item" id="nav-lib"><svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>Biblioteca</span></div>
+    </nav>
+
+    <div class="full-player" id="full-player-modal">
+        <div class="full-player-header"><svg class="close-full" id="close-full" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg></div>
+        <img src="" class="full-cover" id="f-cover">
+        
+        <div class="full-meta-container">
+            <div class="full-info">
+                <h2 id="f-title">Título</h2>
+                <p id="f-artist">Artista</p>
+            </div>
+            <div class="full-player-like" id="f-like">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+        </div>
+
+        <div class="full-progress-container" id="f-progress-container">
+            <div class="full-progress-bg">
+                <div class="full-progress-fill" id="f-progress"></div>
+            </div>
+        </div>
+
+        <div class="full-controls">
+            <button class="full-btn" id="f-prev"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+            <button class="full-btn full-btn-main" id="f-play"><svg id="f-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+            <button class="full-btn" id="f-next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"/></svg></button>
+        </div>
+    </div>
+
+    <audio id="audio" preload="auto" crossorigin="anonymous"></audio>
+
+    <script>
+        let songs = [];
+        let currentIndex = 0;
+        let likedSongs = JSON.parse(localStorage.getItem('likedSongs')) || [];
+        let isSeeking = false;
+
+        const audio = document.getElementById('audio');
+        const grid = document.getElementById('grid');
+        const likedGrid = document.getElementById('liked-grid');
+        const modal = document.getElementById('full-player-modal');
+        const progressContainer = document.getElementById('f-progress-container');
+        const playSVG = '<svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:white;"><path d="M8 5v14l11-7z"/></svg>';
+        const pauseSVG = '<svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:white;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+
+        // 1. BLINDAJE ANTI-CIERRE: Forzar un historial inicial falso apenas cargue la web
+        function initHistoryBlindage() {
+            if (!window.history.state || !window.history.state.baseApp) {
+                window.history.replaceState({ baseApp: true }, '');
+                window.history.pushState({ playerOpen: false }, '');
+            }
+        }
+
+        function switchView(viewId, navId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.getElementById(navId).classList.add('active');
+        }
+
+        document.getElementById('nav-home').onclick = () => switchView('view-home', 'nav-home');
+        document.getElementById('nav-search').onclick = () => { switchView('view-home', 'nav-home'); document.getElementById('search').focus(); };
+        document.getElementById('nav-lib').onclick = () => { switchView('view-library', 'nav-lib'); buildLikedGrid(); };
+
+        function setGreeting() {
+            const hour = new Date().getHours();
+            let g = hour < 12 ? "Buenos días" : (hour < 19 ? "Buenas tardes" : "Buenas noches");
+            document.getElementById('greeting-text').innerText = g;
+        }
+
+        async function loadSongsData() {
+            try {
+                const res = await fetch('lista.json');
+                songs = await res.json();
+                buildMainGrid();
+                if(songs.length > 0) loadSong(0, false);
+            } catch (e) {
+                grid.innerHTML = "<div class='empty-msg'>Error al cargar tus canciones.</div>";
+            }
+        }
+
+        function buildMainGrid() {
+            grid.innerHTML = '';
+            songs.forEach((s, i) => {
+                const card = document.createElement('div');
+                card.className = 'song-card';
+                card.innerHTML = `<img src="${s.cover}" class="card-cover"><div class="card-title">${s.title}</div><div class="card-artist">${s.artist}</div>`;
+                card.onclick = () => { openFullPlayer(i); };
+                grid.appendChild(card);
+            });
+        }
+
+        function buildLikedGrid() {
+            likedGrid.innerHTML = '';
+            if (likedSongs.length === 0) {
+                likedGrid.innerHTML = "<div class='empty-msg'>Aún no tienes canciones favoritas.<br>Toca el corazón en el reproductor para agregarlas.</div>";
+                return;
+            }
+            songs.forEach((s, i) => {
+                if (likedSongs.includes(s.url)) {
+                    const card = document.createElement('div');
+                    card.className = 'song-card';
+                    card.innerHTML = `<img src="${s.cover}" class="card-cover"><div class="card-title">${s.title}</div><div class="card-artist">${s.artist}</div>`;
+                    card.onclick = () => { openFullPlayer(i); };
+                    likedGrid.appendChild(card);
+                }
+            });
+        }
+
+        function loadSong(i, shouldPlay = true) {
+            if (!songs || songs.length === 0) return;
+            const s = songs[i];
+            currentIndex = i;
+            
+            document.getElementById('m-title').innerText = s.title;
+            document.getElementById('m-artist').innerText = s.artist;
+            document.getElementById('m-cover').src = s.cover;
+            document.getElementById('m-cover').style.display = 'block';
+            
+            document.getElementById('f-title').innerText = s.title;
+            document.getElementById('f-artist').innerText = s.artist;
+            document.getElementById('f-cover').src = s.cover;
+            
+            if (audio.src !== s.url) {
+                audio.src = s.url;
+                audio.load();
+            }
+
+            updateLikeUI(s.url);
+
+            if (shouldPlay) {
+                audio.play().then(() => {
+                    document.getElementById('m-play-container').innerHTML = pauseSVG;
+                    document.getElementById('f-play').innerHTML = pauseSVG;
+                }).catch(e => console.log("Carga fluida"));
+            }
+        }
+
+        // CONTROL DE VENTANAS MEJORADO
+        function openFullPlayer(index) {
+            loadSong(index, true);
+            modal.classList.add('open');
+            // Re-inyectamos el estado para asegurar que el celular sepa que hay algo encima
+            window.history.pushState({ playerOpen: true }, '');
+        }
+
+        function closeFullPlayer() {
+            modal.classList.remove('open');
+        }
+
+        // INTERCEPTOR AGRESIVO DE POPSTATE
+        window.onpopstate = function(event) {
+            if (modal.classList.contains('open')) {
+                // Si el reproductor estaba abierto, el gesto de atrás SOLO lo minimiza
+                closeFullPlayer();
+                // Dejamos un buffer por si el usuario vuelve a abrirlo
+                window.history.pushState({ playerOpen: false }, '');
+            } else {
+                // Si ya está cerrado el reproductor, creamos un ciclo infinito para evitar que salga de la web
+                window.history.pushState({ playerOpen: false }, '');
+            }
+        };
+
+        function nextSong() {
+            if (songs.length === 0) return;
+            currentIndex = (currentIndex + 1) % songs.length;
+            loadSong(currentIndex, true);
+        }
+
+        function prevSong() {
+            if (songs.length === 0) return;
+            currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+            loadSong(currentIndex, true);
+        }
+
+        audio.onended = () => { nextSong(); };
+
+        function togglePlay() {
+            if (audio.paused) { 
+                audio.play().catch(e => console.log(e)); 
+                document.getElementById('m-play-container').innerHTML = pauseSVG; 
+                document.getElementById('f-play').innerHTML = pauseSVG; 
+            } else { 
+                audio.pause(); 
+                document.getElementById('m-play-container').innerHTML = playSVG; 
+                document.getElementById('f-play').innerHTML = playSVG; 
+            }
+        }
+
+        function setProgress(e) {
+            if (!audio.duration) return;
+            const rect = progressContainer.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const width = rect.width;
+            const clickX = clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, clickX / width));
+            
+            document.getElementById('f-progress').style.width = (percentage * 100) + '%';
+            audio.currentTime = percentage * audio.duration;
+        }
+
+        progressContainer.addEventListener('click', setProgress);
+        progressContainer.addEventListener('touchstart', () => { isSeeking = true; });
+        progressContainer.addEventListener('touchmove', (e) => { if(isSeeking) setProgress(e); });
+        progressContainer.addEventListener('touchend', () => { isSeeking = false; });
+
+        audio.ontimeupdate = () => {
+            if (!audio.duration || isSeeking) return;
+            const pct = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('m-progress').style.width = pct + '%';
+            document.getElementById('f-progress').style.width = pct + '%';
+        };
+
+        function toggleLike() {
+            if (songs.length === 0) return;
+            const currentUrl = songs[currentIndex].url;
+            if (likedSongs.includes(currentUrl)) {
+                likedSongs = likedSongs.filter(url => url !== currentUrl);
+            } else {
+                likedSongs.push(currentUrl);
+            }
+            localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
+            updateLikeUI(currentUrl);
+            if (document.getElementById('view-library').classList.contains('active')) buildLikedGrid();
+        }
+
+        function updateLikeUI(url) {
+            const mLike = document.getElementById('m-like');
+            const fLike = document.getElementById('f-like');
+            if (likedSongs.includes(url)) { mLike.classList.add('liked'); fLike.classList.add('liked'); }
+            else { mLike.classList.remove('liked'); fLike.classList.remove('liked'); }
+        }
+
+        document.getElementById('m-like').onclick = (e) => { e.stopPropagation(); toggleLike(); };
+        document.getElementById('f-like').onclick = toggleLike;
+        
+        document.getElementById('open-full').onclick = () => { 
+            if(songs.length > 0) {
+                modal.classList.add('open'); 
+                window.history.pushState({ playerOpen: true }, '');
+            }
+        };
+        
+        document.getElementById('close-full').onclick = () => { window.history.back(); };
+        document.getElementById('m-play-container').onclick = (e) => { e.stopPropagation(); togglePlay(); };
+        document.getElementById('f-play').onclick = togglePlay;
+        document.getElementById('f-next').onclick = nextSong;
+        document.getElementById('f-prev').onclick = prevSong;
+
+        document.getElementById('search').oninput = (e) => {
+            const val = e.target.value.toLowerCase();
+            document.querySelectorAll('#view-home .song-card').forEach((card, i) => {
+                const match = songs[i].title.toLowerCase().includes(val) || songs[i].artist.toLowerCase().includes(val);
+                card.style.display = match ? 'block' : 'none';
+            });
+        };
+
+        initHistoryBlindage(); // Lanzar truco del historial invisible al arrancar
+        setGreeting();
+        loadSongsData();
+    </script>
+</body>
+</html>
